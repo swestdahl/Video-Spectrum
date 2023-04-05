@@ -1,0 +1,54 @@
+import cv2
+import numpy as np
+
+# Read the video file
+cap = cv2.VideoCapture('input_video.mp4')
+
+# Initialize variables to keep track of color timeline
+color_timeline = []
+frame_count = 0
+
+# Loop through each frame of the video
+while cap.isOpened():
+    # Read a frame from the video
+    ret, frame = cap.read()
+    if not ret:
+        break
+    
+    # Convert the frame to HSV color space
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    
+    # Calculate the histogram of hue values
+    hist, _ = np.histogram(hsv[:,:,0], bins=np.arange(180+1))
+    
+    # Find the dominant color by selecting the bin with the highest count
+    dominant_color_hue = np.argmax(hist)
+    
+    # Convert the dominant hue value back to BGR color space
+    dominant_color_bgr = np.array([[[dominant_color_hue/2,255,255]]], dtype=np.uint8)
+    dominant_color_bgr = cv2.cvtColor(dominant_color_bgr, cv2.COLOR_HSV2BGR)[0][0]
+    
+    # Append the dominant color to the timeline
+    color_timeline.append(dominant_color_bgr)
+    frame_count += 1
+
+# Release the video capture
+cap.release()
+
+# Create an image representing the color timeline
+height = 100
+width = len(color_timeline)
+timeline_image = np.zeros((height, width, 3), dtype=np.uint8)
+
+for i, color_bgr in enumerate(color_timeline):
+    # Calculate the start and end coordinates of the color bar
+    x1 = i
+    y1 = 0
+    x2 = i
+    y2 = height
+    
+    # Draw the color bar on the timeline image
+    cv2.line(timeline_image, (x1, y1), (x2, y2), tuple(color_bgr.tolist()), thickness=1)
+
+# Save the timeline image
+cv2.imwrite('color_timeline.jpg', timeline_image)
