@@ -1,0 +1,43 @@
+import cv2
+import numpy as np
+
+# Read the video file
+cap = cv2.VideoCapture('input_video.mp4')
+
+# Initialize variables to keep track of color timeline
+color_timeline = []
+frame_count = 0
+
+# Loop through each frame of the video
+while cap.isOpened():
+    # Read a frame from the video
+    ret, frame = cap.read()
+    if not ret:
+        break
+    
+    # Convert the frame to HSV color space
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    
+    # Calculate the histogram of hue values
+    hist, _ = np.histogram(hsv[:,:,0], bins=np.arange(180+1))
+    
+    # Find the dominant color by selecting the bin with the highest count
+    dominant_color_hue = np.argmax(hist)
+    
+    # Convert the dominant hue value back to BGR color space
+    dominant_color_bgr = np.array([[[dominant_color_hue/2,255,255]]], dtype=np.uint8)
+    dominant_color_bgr = cv2.cvtColor(dominant_color_bgr, cv2.COLOR_HSV2BGR)[0][0]
+    
+    # Append the dominant color to the timeline
+    color_timeline.append((frame_count, dominant_color_bgr))
+    frame_count += 1
+
+# Release the video capture and close the output file
+cap.release()
+
+# Output the color timeline to a CSV file
+with open('color_timeline.csv', 'w') as f:
+    f.write('frame,color_b,color_g,color_r\n')
+    for frame_num, color_bgr in color_timeline:
+        color_b, color_g, color_r = color_bgr
+        f.write(f'{frame_num},{color_b},{color_g},{color_r}\n')
